@@ -4,8 +4,7 @@ from prysm.coordinates import make_xy_grid, cart_to_polar
 class SpeckleAreaNulling:
 
     def __init__(self, propagation, dx_img, epd, efl, wvl, dm, IWA, OWA,
-                 ref_contrast=1, edge=None, angular_range=[-90, 90],
-                 starting_wfe=None):
+                 ref_contrast=1, edge=None, angular_range=[-90, 90]):
         """Instance of Speckle Area Nulling
 
         Parameters
@@ -57,10 +56,6 @@ class SpeckleAreaNulling:
         self.ref_contrast = ref_contrast
         self.nact = self.dm.Nact
         self.edge = edge
-        if starting_wfe is None:
-            self.wfe_offset = 0
-        else:
-            self.wfe_offset = starting_wfe
 
         # construct a dark hole
         self.Nimg = self.fwd().shape[0]
@@ -126,7 +121,7 @@ class SpeckleAreaNulling:
         # Four probe steps
         for probe in [-self.sin_probe, self.sin_probe, -self.cos_probe, self.cos_probe]:
             self.dm.actuators[:] += probe
-            I = self.fwd(self.dm.render(wfe=True) + self.wfe_offset) / self.ref_contrast
+            I = self.fwd(self.dm.render(wfe=True)) / self.ref_contrast
             self.dm.actuators[:] -= probe
             self.images.append(I)
 
@@ -161,8 +156,15 @@ class SpeckleAreaNulling:
         self.dm.actuators[:] += correction
         self.dm_surface.append(self.dm.actuators)
 
+        import matplotlib.pyplot as plt
+
+        plt.figure()
+        plt.imshow(self.dm.render(wfe=True), cmap="RdBu_r")
+        plt.colorbar()
+        plt.show()
+
         # return an image
-        img = self.fwd(self.dm.render(wfe=True) + self.wfe_offset) / self.ref_contrast
+        img = self.fwd(self.dm.render(wfe=True)) / self.ref_contrast
 
         # get mean in dark hole
         self.mean_in_dh.append(np.mean(img[self.dh==1]))

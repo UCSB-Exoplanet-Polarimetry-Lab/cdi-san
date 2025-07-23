@@ -119,7 +119,7 @@ class KeckTelescope(TelescopeModel):
     """Construct an instance of a Keck II PSF Simulator
     """
 
-    def __init__(self, center_wavelength, bandwidth,
+    def __init__(self, center_wavelength, bandwidth, starting_wfe,
                  epd=10.95e3, efl=17.5e3, num_wavelengths=5,
                  Npup=1024, Nimg=128, dx_pup=10.95e3/1024, dx_img=1,
                  IWA=3, OWA=None, LS_inner=0.2, LS_outer=0.8):
@@ -165,6 +165,9 @@ class KeckTelescope(TelescopeModel):
             exposure_time=self.exposure_time,
         )
 
+        self.starting_wfe = starting_wfe
+        self.N_PHOTONS = 10
+
 
     def get_entrance_pupil(self):
         """Returns entrance pupil array
@@ -190,15 +193,16 @@ class KeckTelescope(TelescopeModel):
         ndarray
             focal plane
         """
-        N_PHOTONS = 10_000
 
         if wfe is None:
             wfe = 0
 
+        wfe += self.starting_wfe
+
         for i, wvl in enumerate(self.wavelengths):
 
             # construct wfe phasor
-            wfe_phasor = np.exp(1j * 2 * np.pi / wvl * wfe) * N_PHOTONS
+            wfe_phasor = np.exp(1j * 2 * np.pi / wvl * wfe) * self.N_PHOTONS
 
             focus = focus_fixed_sampling(self.get_entrance_pupil() * wfe_phasor,
                                          input_dx=self.dx_pup,
@@ -207,7 +211,7 @@ class KeckTelescope(TelescopeModel):
                                          output_dx=self.dx_img, # microns
                                          output_samples=self.Nimg)
 
-            intensity = np.abs(focus)**2 #/ len(self.wavelengths)
+            intensity = np.abs(focus)**2 / len(self.wavelengths)
 
             if i == 0:
                 psf = intensity
@@ -245,10 +249,12 @@ class KeckTelescope(TelescopeModel):
         if wfe is None:
             wfe = 0
 
+        wfe += self.starting_wfe
+
         for i, wvl in enumerate(self.wavelengths):
 
             # construct wfe phasor
-            wfe_phasor = np.exp(1j * 2 * np.pi / wvl * wfe)
+            wfe_phasor = np.exp(1j * 2 * np.pi / wvl * wfe) * self.N_PHOTONS
 
             # go to psf
             focus = focus_fixed_sampling(self.get_entrance_pupil() * wfe_phasor,
@@ -282,12 +288,13 @@ class KeckTelescope(TelescopeModel):
                                         output_dx=self.dx_img, # microns
                                         output_samples=self.Nimg)
 
-            intensity = np.abs(coro)**2 #/ len(self.wavelengths)
+            intensity = np.abs(coro)**2 / len(self.wavelengths)
 
             if i == 0:
                 psf = intensity
             else:
                 psf += intensity
+
 
         psf = self.detector.expose(psf)
 
