@@ -23,6 +23,7 @@ KECK_CORO_IWA_AS = [
 KECK_CORO_IWA_LAMD = np.asarray(KECK_CORO_IWA_AS) / 206265
 KECK_CORO_IWA_LAMD *= 10.95 / 1.65e-6
 
+
 class TelescopeModel:
     """Base class for constructing telescope models
     """
@@ -216,6 +217,11 @@ class KeckTelescope(TelescopeModel):
         psf = self.detector.expose(psf)
 
         return psf
+
+    def get_dark_image(self):
+        dark = np.zeros([self.Npup, self.Npup])
+        dark_frame = self.detector.expose(dark)
+        return dark_frame
 
     def get_coronagraph_image(self, wfe=None, include_fpm=True):
         """Simulate a (generally) coronagraphic image. Currently supports
