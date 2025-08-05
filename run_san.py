@@ -2,6 +2,7 @@
 from models import KeckTelescope
 from san import SpeckleAreaNulling
 from influenc_funcs import gaussian_influence_function
+import ipdb
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -77,8 +78,10 @@ san = SpeckleAreaNulling(
     dm=dm,
     IWA=4,
     OWA=7,
-    angular_range=[-85, 85],
+    angular_range=[85, -85],
 )
+
+ipdb.set_trace()
 
 NSTEPS = 4
 corrected_images = []

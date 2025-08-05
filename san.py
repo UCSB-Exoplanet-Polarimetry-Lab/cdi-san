@@ -65,11 +65,13 @@ class SpeckleAreaNulling:
         r, t = cart_to_polar(self.u, self.v)
 
         self.dh = np.zeros([self.Nimg, self.Nimg])
+
         self.dh[r < self.OWA] = 1.
         self.dh[r < self.IWA] = 0.
 
-        self.dh[t < angular_range[0]] = 1.
-        self.dh[t > angular_range[1]] = 1.
+        self.dh[t > np.radians(angular_range[0])] *= 0.
+        self.dh[t < np.radians(angular_range[1])] *= 0.
+
 
         if self.edge is not None:
             self.dh[self.u < self.edge] = 0.
