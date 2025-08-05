@@ -71,6 +71,7 @@ class SpeckleAreaNulling:
 
         self.dh[t > np.radians(angular_range[0])] *= 0.
         self.dh[t < np.radians(angular_range[1])] *= 0.
+        self.dh = self.dh.astype(bool)
 
 
         if self.edge is not None:
