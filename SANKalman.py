@@ -8,7 +8,7 @@ safe_div = lambda num, den: np.divide(
     where=np.abs(den) > TOL
 )
 
-BIG_VAR = 1e30    # big covariance for zero denominator
+BIG_VAR = 1e10    # big covariance for zero denominator
 
 class SANKalman:
     """
@@ -182,3 +182,6 @@ class SANKalman:
         # ----- covariance update -----
         self.P[:, 0, 0] *= (1.0 - K11)
         self.P[:, 1, 1] *= (1.0 - K22)
+
+        # innovation for residual analysis
+        self.last_innovation = np.vstack((y0, y1)) 

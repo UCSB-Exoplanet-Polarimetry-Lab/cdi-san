@@ -64,14 +64,33 @@ class SpeckleAreaNulling:
         self.u, self.v = make_xy_grid(self.Nimg, dx=self.image_dx_lamD)
         r, t = cart_to_polar(self.u, self.v)
 
-        self.dh = np.zeros([self.Nimg, self.Nimg])
+        # masking dark hole
+        self.dh = np.zeros((self.Nimg, self.Nimg), dtype=bool)
+
+        rmask = (r >= self.IWA) & (r <= self.OWA)
+        self.dh[rmask] = True
+
+        ang0, ang1 = np.radians(angular_range)  
+        ang_mask = (t >= ang0) & (t <= ang1)
+        self.dh &= ang_mask               
+
+        if self.edge is not None:
+            self.dh[self.u < self.edge] = False
+
+        # Bulid up the fourier modes in the dark hole region
+        kfreq = self.kvec / (self.efl * 1e-3)          
+        xfreq = (kfreq * self.x)[self.dh]              
+        yfreq = (kfreq * self.y)[self.dh]
+
+
+        '''self.dh = np.zeros([self.Nimg, self.Nimg])
 
         self.dh[r < self.OWA] = 1.
         self.dh[r < self.IWA] = 0.
 
         self.dh[t > np.radians(angular_range[0])] *= 0.
         self.dh[t < np.radians(angular_range[1])] *= 0.
-        self.dh = self.dh.astype(bool)
+        #self.dh = self.dh.astype(bool)
 
 
         if self.edge is not None:
@@ -81,6 +100,7 @@ class SpeckleAreaNulling:
         kfreq = self.kvec / (self.efl * 1e-3)  # convert wavelength to milimeters
         xfreq = (kfreq * self.x)[self.dh == 1]
         yfreq = kfreq * self.y[self.dh == 1]
+        print(xfreq, yfreq)'''
 
         # Make the DM shapes
         xdm, ydm = make_xy_grid(self.nact, dx=self.dm.act_pitch)
@@ -156,7 +176,7 @@ class SpeckleAreaNulling:
         # CONTROL SIGNAL
         correction = sin_coeffs * self.sin_modes + cos_coeffs * self.cos_modes
         correction = np.sum(correction, axis=0)
-        self.dm.actuators[:] += correction
+        self.dm.actuators[:] -= correction
         self.dm_surface.append(self.dm.actuators)
 
         import matplotlib.pyplot as plt
