@@ -3,6 +3,7 @@ from models import KeckTelescope
 from san import SpeckleAreaNulling
 from influenc_funcs import gaussian_influence_function
 import ipdb
+import numpy as np
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -33,7 +34,6 @@ plt.figure()
 plt.title("Dark Frame")
 plt.imshow(keck.get_dark_image(), cmap="gray")
 plt.colorbar()
-plt.show()
 
 # Here for normalization, not strictly necessary
 ref = 1
@@ -51,7 +51,6 @@ plt.subplot(133)
 plt.title("Coronagraphic Image H-band")
 plt.imshow(keck.get_coronagraph_image(include_fpm=True, wfe=wavefront_error) / ref, cmap="inferno", norm=LogNorm())
 plt.colorbar(label="Normalized Intensity")
-plt.show()
 
 
 # Set up a deformable mirror
@@ -78,17 +77,38 @@ san = SpeckleAreaNulling(
     dm=dm,
     IWA=4,
     OWA=7,
-    angular_range=[85, -85],
+    angular_range=[-85, 85],
 )
 
-ipdb.set_trace()
+plt.figure()
+plt.subplot(121)
+plt.title("Sin Probe")
+plt.imshow(san.sin_probe, cmap="RdBu_r")
+plt.subplot(122)
+plt.title("Cos Probe")
+plt.imshow(san.cos_probe, cmap="RdBu_r")
 
-NSTEPS = 4
+NSTEPS = 5
 corrected_images = []
+mean_in_dh = []
 for i in range(NSTEPS):
-    img = san.step(regularization=5e4)
+    img = san.step(regularization=100000)
     corrected_images.append(img)
-    plt.figure()
-    plt.imshow(img, cmap="inferno", norm=LogNorm())
-    plt.colorbar()
-    plt.show()
+    mean_in_dh.append(np.mean(img[san.dh==1]))
+    plt.figure(figsize=[12, 4])
+    plt.suptitle(f"Iteration {i+1}")
+    plt.subplot(131)
+    plt.imshow(san.Im1, cmap="coolwarm")
+    plt.contour(san.dh, levels=[0,5], colors="w")
+    plt.subplot(132)
+    plt.imshow(san.Im2, cmap="coolwarm")
+    plt.contour(san.dh, levels=[0,5], colors="w")
+    plt.subplot(133)
+    plt.imshow(img, norm=LogNorm())
+    plt.contour(san.dh, levels=[0,5], colors="w")
+
+plt.figure()
+plt.plot(mean_in_dh, marker="o")
+plt.ylabel("Intensity, arb. units")
+plt.title("Mean in Dark Hole v.s. Iteration")
+plt.show()

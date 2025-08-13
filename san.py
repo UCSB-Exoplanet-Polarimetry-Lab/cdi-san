@@ -104,14 +104,15 @@ class SpeckleAreaNulling:
 
         # Make the DM shapes
         xdm, ydm = make_xy_grid(self.nact, dx=self.dm.act_pitch)
-        arg = xfreq[..., None, None] * xdm + yfreq[..., None, None] * ydm
-        self.cos_modes = np.cos(arg)
-        self.sin_modes = np.sin(arg)
 
         # NOTE This is a spatial frequency fudge factor, something is off
         # by a couple factors of two
-        xdm /= 8
-        ydm /= 8
+        xdm *= 128
+        ydm *= 128
+        
+        arg = xfreq[..., None, None] * xdm + yfreq[..., None, None] * ydm
+        self.cos_modes = np.cos(arg)
+        self.sin_modes = np.sin(arg)
 
         V1sum = np.sum(self.sin_modes, axis=0)
         V2sum = np.sum(self.cos_modes, axis=0)
@@ -120,12 +121,13 @@ class SpeckleAreaNulling:
         V2norm = np.abs(V2sum).max()
         V1sum /= V1norm
         V2sum /= V2norm
+        
+        PROBE_AMP = 1/10
+        self.sin_probe = V1sum * PROBE_AMP 
+        self.cos_probe = V2sum * PROBE_AMP
 
-        self.sin_probe = V1sum / 10
-        self.cos_probe = V2sum / 10
-
-        self.sin_modes /= V1norm * 10
-        self.cos_modes /= V2norm * 10
+        self.sin_modes /= V1norm / PROBE_AMP
+        self.cos_modes /= V2norm / PROBE_AMP
 
     def step(self, regularization=0):
         """Advance the algorithm one iteration
@@ -154,8 +156,8 @@ class SpeckleAreaNulling:
         Im2 = self.images[-2]  # minus cos probe
         Ip2 = self.images[-1]  # plus cos probe
 
-        self.Im1 = Im1
-        self.Im2 = Im2
+        self.Im1 = (Im1 - Ip1)
+        self.Im2 = (Im2 - Ip2)
 
         # Compute the relevant quantities
         dE1 = (Ip1 - Im1) / 4
@@ -178,13 +180,6 @@ class SpeckleAreaNulling:
         correction = np.sum(correction, axis=0)
         self.dm.actuators[:] -= correction
         self.dm_surface.append(self.dm.actuators)
-
-        import matplotlib.pyplot as plt
-
-        plt.figure()
-        plt.imshow(self.dm.render(wfe=True), cmap="RdBu_r")
-        plt.colorbar()
-        plt.show()
 
         # return an image
         img = self.fwd(self.dm.render(wfe=True)) / self.ref_contrast
