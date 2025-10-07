@@ -7,6 +7,8 @@ Project to organize code for CDI-SAN effort at UCSB
 
 [Document](docs/Kalman_Filter_SAN.pdf) describing the process of using Kalman filter as SAN regularization. Page 3 includes a proposed noise term computation.
 
+10/7/2025 Adding [document](docs/Kalman_Filter_Improvement.pdf) describing a new setup that try to avoid division by zero
+
 ## Installation
 The SAN simulator is built on the latest version of the `prysm` optical propagation package. To install, first clone from source and then pip install.
 
